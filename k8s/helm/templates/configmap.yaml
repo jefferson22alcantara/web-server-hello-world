@@ -1,0 +1,13 @@
+{{- if .Values.env.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-env-vars
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Version }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  {{- toYaml .Values.env.data | nindent 4 }}
+{{- end }}

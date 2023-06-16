@@ -1,0 +1,91 @@
+{{- $envenabled := .Values.env.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+    chart: {{ .Chart.Version }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+        release: {{ .Release.Name }}
+      annotations:
+      {{- if .Values.vault.enabled }}
+        vault.hashicorp.com/agent-inject: 'true'
+        vault.hashicorp.com/role: '{{ .Values.vault.clusterrule }}'
+        vault.hashicorp.com/tls-skip-verify: "true"
+        {{- if .Values.vault.appSecret }}
+        vault.hashicorp.com/agent-inject-secret-config-app: "{{ .Values.vault.appSecret }}"
+        # Environment variable export template
+        vault.hashicorp.com/agent-inject-template-config-app: |
+          {{`{{- with secret `}}"{{ .Values.vault.appSecret }}" {{`}}
+             {{- range $k, $v := .Data.data }}
+                 export {{ $k }}='{{ $v }}'
+             {{- end }}
+          {{- end }}`}}
+        {{- end }}
+        {{- if .Values.vault.databaseSecret }}
+        vault.hashicorp.com/agent-inject-secret-config-db: "{{ .Values.vault.databaseSecret }}"
+        # Environment variable export template
+        vault.hashicorp.com/agent-inject-template-config-db: |
+          {{`{{- with secret `}}"{{ .Values.vault.databaseSecret }}" {{`}}
+             {{- range $k, $v := .Data.data }}
+                 export {{ $k }}='{{ $v }}'
+             {{- end }}
+          {{- end }}`}}
+        {{- end }}
+        {{- end }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: {{ .Values.image.livenessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.image.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.image.livenessProbe.periodSeconds }}
+            successThreshold: {{ .Values.image.livenessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.image.livenessProbe.timeoutSeconds }}
+            httpGet:
+              path: {{ .Values.image.livenessProbe.path }}
+              port: {{ .Values.service.port }}
+          readinessProbe:
+            failureThreshold: {{ .Values.image.readinessProbe.failureThreshold }}
+            initialDelaySeconds: {{ .Values.image.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.image.readinessProbe.periodSeconds }}
+            successThreshold: {{ .Values.image.readinessProbe.successThreshold }}
+            timeoutSeconds: {{ .Values.image.readinessProbe.timeoutSeconds }}
+            httpGet:
+              path: {{ .Values.image.livenessProbe.path }}
+              port: {{ .Values.service.port }}
+          resources:
+            limits:
+              cpu: {{ .Values.resourcesLimitsCpu }}
+              memory: {{ .Values.resourcesLimitsMemory }}
+            requests:
+              cpu: {{ .Values.resourcesLimitsRequestsCpu }}
+              memory: {{ .Values.resourcesLimitsRequestsMemory }}
+          {{- if $envenabled }}    
+          envFrom:
+            - configMapRef:
+                name: {{ .Chart.Name }}-env-vars
+          {{- end }}      
+          env:
+          - name: ENV
+            value: {{ .Values.environment }}
+      serviceAccountName: {{ .Chart.Name }}
+

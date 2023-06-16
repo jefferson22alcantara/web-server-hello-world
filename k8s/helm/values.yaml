@@ -1,0 +1,53 @@
+---
+# Default values for mp-product-configuration.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+replicaCount: 1
+
+
+hpaMaxReplicas: 4
+hpaPercentage: 80
+
+resourcesLimitsRequestsCpu: 100m
+resourcesLimitsRequestsMemory: 256Mi
+resourcesLimitsCpu: 200m
+resourcesLimitsMemory: 512Mi
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  annotations:
+  path: /
+  host:
+    servicename: web-app
+  tls:
+    secretName: web-app
+
+image:
+  repository: jefferson22alcantara/helloworld-web-app
+  tag: 0.1
+  pullPolicy: Always
+  livenessProbe:
+    path: /
+    failureThreshold: 2
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+  readinessProbe:
+    path: /
+    failureThreshold: 2
+    initialDelaySeconds: 30
+    periodSeconds: 20
+    timeoutSeconds: 5
+
+
+vault:
+  enabled: false
+
+env:
+  enabled: true
+  data:
+    WEB_API_URL: https://web.example.com
