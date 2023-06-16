@@ -51,6 +51,20 @@ web-server-hello-world
 docker build -t web-app -f web-app/app/Dockerfile web-app/app
 ```
 
+##### External docker registry Repository 
+```
+docker build 
+Usage: ./build/build_image.sh -u [user] -p password -r repo
+Usage: ./build/build_image.sh [option...] 
+Options:
+-u docker_user [ docker user  ]
+-p password [ docker password ]
+-r docker_repo [ docker repo  ]
+
+./build/build_image.sh -u $DOCKER_USER -p $DOCKER_TOKEN -r $DOCKER_REPO
+```
+
+
 #### local run 
 
 ```
